@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset=utf-8 />
+<title>Interactive Map :Selection of Zip Codes of All States</title>
+<meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+ <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+   integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+   crossorigin=""/>
+ <!-- Make sure you put this AFTER Leaflet's CSS -->
+ <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+   integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+   crossorigin=""></script>
+    
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/leaflet.css" />
+  <link rel="stylesheet" href="css/MarkerCluster.Default.css">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css">
+  <link href="https://fonts.googleapis.com/css?family=Titillium+Web|Oswald" rel="stylesheet">
+  <link href="css/c3.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/simplebar.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.2/animate.min.css">
+  <link href="css/bootstrap4-toggle.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/mobile.css">
+  <link rel="icon" href="img/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="src/leaflet-search.css" />
+    
+    
+  <script src="js/d3.js"></script>
+  <script src="js/c3.min.js"></script>
+  
+  <script src="js/leaflet.markercluster.js"></script>
+  <script src="js/leaflet-polygon.fillPattern.js"></script>
+  <script src="js/topojson.v1.min.js"></script>
+  <script src="js/chroma.min.js"></script>
+  
+  <script type="text/javascript" src="js/jquery.sparkline.min.js"></script>
+  <script src="js/bootstrap.min.js"></script>
+  <script src="js/bootstrap4-toggle.min.js"></script>
+  <script src="js/simplebar.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
+    
+   <script src="src/leaflet-search.js"></script> 
+   <script src="data/us-states.js"></script> 
+    
+ <style>
+     
+     
+  body { margin:0; padding:0; }
+  #map { position: relative;
+z-index: 0;
+background-color: #ffffff00;
+height: 600px;
+width: 1050px;};
+
+  
+#loading {
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  position: fixed;
+  display: block;
+  opacity: 0.7;
+  background-color: #fff;
+  z-index: 99;
+  text-align: center;
+}
+
+#loading-image {
+  position: absolute;
+  top: 250px;
+  left: 480px;
+  z-index: 100;
+}     
+     
+     
+</style>
+</head>
+<body>
+    
+    
+  
+    <div>
+        <div id="loading">
+            <img id="loading-image" src="img/loading.gif" alt="Loading..." />
+            </div>
+        <div id="map" ></div>
+           
+            
+        <b style="position: absolute;z-index: 4 ; top: 40px;right: 12px;;">Zip Codes</b>
+                <input type="button" value="Get Zip Codes" id="getzip" style="position: absolute;z-index: 4 ; top: 10px;right: 10px;;">
+                <div style="position: absolute;z-index: 3 ; top: 60px;right: 10px;;">
+        <textarea id="ziplist" rows="10" cols="5"></textarea>
+        
+        </div>
+            <h4 style="position: absolute;z-index: 4 ; top: 7px;left: 180px;;">Select State:</h4>
+            <select id="ul" style="position: absolute;z-index: 4 ; top: 40px;left: 180px;;"></select>
+        
+    
+            
+	
+
+
+    <div style="position: absolute;z-index: 4 ; right: 10px;top: 10px;">
+                
+            </div>
+    </div>
+        
+    
+
+    
+
+    
+    
+
+<script>
+var states = us_states;
+ $(document).ready(function() {   
+    
+
+// Layergoup of selected Layers     
+     
+let queue = L.layerGroup();
+// array to pass to hightlight the layers upon map loading
+     
+inputzip = ['62838','62284','62885'];  
+
+     
+     
+     
+// map     
+
+var map = L.map('map',{attributionControl: false,zoomControl:false,center: [39.82, -98.58],
+    zoom: 5,
+	attribution : false,
+		zoomSnap: 0
+});
+L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/light-v8/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoicHJpbnRjb25kaXRpb24iLCJhIjoiY2p5bm5zd25jMHNhODNtbzIzMnE1cjlrayJ9.HQqqXJJJOza-67HUIHooPA', {
+    maxZoom: 18,
+	
+
+}).addTo(map);
+
+    
+new L.control.scale().addTo(map);    
+ 
+$(document).ready(function(){    
+    
+    
+    let  statelist = document.getElementById('ul');
+     
+     var featuresLayer = new L.GeoJSON(states,{
+             onEachFeature: function(feature, qlayer) {
+                
+                 
+                     let stateitem = document.createElement('option');
+   
+                 stateitem.innerHTML = feature.properties.name;
+                 statelist.appendChild(stateitem);
+                 
+                     
+                 
+             }
+         });
+    
+      
+     $("#ul").change(function(){
+         var selValue = $(this).val();
+         if(selValue=='Alaska'){
+          var as= map.flyTo([ 64.200828, -149.493680], 9)
+          map.fitbound(as);
+         }
+         if(selValue=='Arizona'){
+          var as= map.flyTo([ 34.048930, -111.093771], 9)
+          map.fitbound(as);
+         }
+         if(selValue=='Arkansas'){
+          var as= map.flyTo([  35.201050, -91.831833], 9)
+          map.fitbound(as);
+         } if(selValue=='California'){
+          var as= map.flyTo([  36.778258,-119.417936],9)
+          map.fitbound(as);
+         } if(selValue=='Colorado'){
+          var as= map.flyTo([  39.548281,-105.790994],9)
+          map.fitbound(as);
+         } if(selValue=='Connecticut'){
+          var as= map.flyTo([  41.603215, -73.087848,14],9)
+          
+         } if(selValue=='Delaware'){
+          var as= map.flyTo([ 38.910832, -75.527670],9)
+          map.fitbound(as);
+         } if(selValue=='District of Columbia'){
+          var as= map.flyTo([  38.907192, -77.036870],9)
+          map.fitbound(as);
+         } if(selValue=='Florida'){
+          var as= map.flyTo([  27.664826, -81.515753],9)
+          map.fitbound(as);
+         } if(selValue=='Georgia'){
+          var as= map.flyTo([  32.163726,  -82.900075],9)
+          map.fitbound(as);
+         } if(selValue=='Hawaii'){
+          var as= map.flyTo([   19.897289, -155.581042],9)
+          map.fitbound(as);
+         } if(selValue=='Idaho'){
+          var as= map.flyTo([   44.057113,  -114.765311],9)
+          map.fitbound(as);
+         } if(selValue=='Illinois'){
+          var as= map.flyTo([   40.633125,  -89.398528],9)
+          map.fitbound(as);
+         } if(selValue=='Indiana'){
+          var as= map.flyTo([  40.315986,  -86.569101],9)
+          map.fitbound(as);
+         } if(selValue=='Iowa'){
+          var as= map.flyTo([   41.984135,  -93.156953],9)
+          map.fitbound(as);
+         } if(selValue=='Kansas'){
+          var as= map.flyTo([   39.012113,  -98.481494],9)
+          map.fitbound(as);
+         } if(selValue=='Kentucky'){
+          var as= map.flyTo([   37.839333,  -84.270018],9)
+          map.fitbound(as)
+         } if(selValue=='Louisiana'){
+          var as= map.flyTo([   30.993662,  -91.952199],9)
+          map.fitbound(as);
+         } if(selValue=='Maine'){
+          var as= map.flyTo([   45.253781,  -69.445469],9)
+          map.fitbound(as);
+         } if(selValue=='Maryland'){
+          var as= map.flyTo([   39.045754,  -76.641270],9)
+          map.fitbound(as);
+         } if(selValue=='Massachusetts'){
+          var as= map.flyTo([  42.407008,  -71.382763],9)
+          map.fitbound(as);
+         } if(selValue=='Michigan'){
+          var as= map.flyTo([  44.292843,  -85.434922],9)
+          map.fitbound(as);
+         } if(selValue=='Minnesota'){
+          var as= map.flyTo([   46.728805,  -94.683012],9)
+          map.fitbound(as);
+         } if(selValue=='Mississippi'){
+          var as= map.flyTo([   32.358659,  -89.399873],9)
+          map.fitbound(as);
+         } if(selValue=='Missouri'){
+          var as= map.flyTo([   37.947784,  -91.824422],9)
+          map.fitbound(as);
+         } if(selValue=='Montana'){
+          var as= map.flyTo([   46.802770, -110.188419],9)
+          map.fitbound(as);
+         } if(selValue=='Nebraska'){
+          var as= map.flyTo([   41.508289,  -99.931186],9)
+          map.fitbound(as);
+         } if(selValue=='Nevada'){
+          var as= map.flyTo([   38.815611,  -116.340559],9)
+          map.fitbound(as);
+         }if(selValue=='New Hampshire'){
+          var as= map.flyTo([    43.191631,  -71.597157],9)
+          map.fitbound(as);
+         }
+         if(selValue=='New Jersey'){
+          var as= map.flyTo([    40.058873,  -74.405176],9)
+          map.fitbound(as);
+         }
+         if(selValue=='New Mexico'){
+          var as= map.flyTo([    34.520966,  -105.864311],9)
+          map.fitbound(as);
+         }
+         if(selValue=='New York'){
+          var as= map.flyTo([    40.712031,  -74.010082],9)
+          map.fitbound(as);
+         }
+         if(selValue=='North Carolina'){
+          var as= map.flyTo([    35.759574,  -79.019299],9)
+          map.fitbound(as);
+         }
+         if(selValue=='North Dakota'){
+          var as= map.flyTo([    47.551493,  -101.002012],9)
+          map.fitbound(as);
+         }
+         if(selValue=='Ohio'){
+          var as= map.flyTo([    40.422965,  -82.920857],9)
+          map.fitbound(as);
+         }
+         if(selValue=='Oklahoma'){
+          var as= map.flyTo([    35.467560,  -97.516428],9)
+          map.fitbound(as);
+         }
+         if(selValue=='Oregon'){
+          var as= map.flyTo([    43.795411,  -120.528103],9)
+          map.fitbound(as);
+         }
+         if(selValue=='Pennsylvania'){
+          var as= map.flyTo([    41.203322,  -77.194525],9)
+          map.fitbound(as);
+         }
+         if(selValue=='Rhode Island'){
+          var as= map.flyTo([    41.580081,  -71.477632],9)
+          map.fitbound(as);
+         }
+         if(selValue=='South Carolina'){
+          var as= map.flyTo([   33.836081,  -81.163725],9)
+          map.fitbound(as);
+         }
+         if(selValue=='South Dakota'){
+          var as= map.flyTo([    43.959794,  -99.882178],9)
+          map.fitbound(as);
+         }
+         if(selValue=='Tennessee'){
+          var as= map.flyTo([   38.815611,  -116.340559],9)
+          map.fitbound(as);
+         }
+         if(selValue=='Texas'){
+          var as= map.flyTo([    31.733546,  -99.835492],9)
+          map.fitbound(as);
+         }
+         if(selValue=='Utah'){
+          var as= map.flyTo([    39.320758,  -111.093378],9)
+          map.fitbound(as);
+         }
+         if(selValue=='Vermont'){
+          var as= map.flyTo([     44.558804,-72.577841  ],9)
+          map.fitbound(as);
+         }
+         if(selValue=='Virginia'){
+          var as= map.flyTo([37.431573,  -78.656896],9)
+          map.fitbound(as);
+         }
+         if(selValue=='Washington'){
+          var as= map.flyTo([    47.750950,  -120.739555],9)
+          map.fitbound(as);
+         }
+         if(selValue=='West Virginia'){
+          var as= map.flyTo([    38.597627,  -80.454904],9)
+          map.fitbound(as);
+         }
+         if(selValue=='Wisconsin'){
+          var as= map.flyTo([    43.784439,  -88.787868],9)
+          map.fitbound(as);
+         }
+         if(selValue=='Wyoming'){
+          var as= map.flyTo([    43.076213,  -107.283924],9)
+          map.fitbound(as);
+         }
+         if(selValue=='Puerto Rico'){
+          var as= map.flyTo([    18.220833,  -66.590149],9)
+          map.fitbound(as);
+         }
+        
+ 
+ 
+         
+     });
+ 
+   });
+ 
+ 
+
+
+ // styles for layers
+     
+function style(feature) {
+    return {
+        fillColor: 'lightyellow', 
+        fillOpacity: 0.1,  
+        weight: 0.2,
+        opacity: 1,
+        color: 'orange',
+        dashArray: ' '
+    };
+}
+    var defaultstyle = {fillColor: 'lightyellow', 
+        fillOpacity: 0.1,  
+        weight: 0.2,
+        opacity: 1,
+        color: 'orange',
+        dashArray: ' '};
+    
+	var highlight = {
+		'fillColor': 'yellow',
+        'fillOpacity': 0.4,
+		'weight': 0.3,
+		'opacity': 1
+	};
+    
+    
+     
+     
+    
+function forEachFeature(feature, layer) {
+
+    for(var i=0;i<inputzip.length+1;i++){
+  if (feature.properties.ZCTA5CE10 == inputzip[i] ) {
+        layer.setStyle(highlight);
+    }
+    }
+    
+    
+    
+           (function(layer, properties) {
+     
+      layer.on("mouseover", function (e) {
+       
+        
+     
+        var popup = $("<div></div>", {
+            id: "Zipcode" + properties.ZCTA5CE10,
+            css: {
+                position : "absolute",
+                bottom: "85px",
+                left: "50px",
+                zIndex: 1002,
+               padding: "6px 8px",
+                font: "14px/16px Arial, Helvetica, sans-serif", 
+                
+                background: "orange",
+                
+                boxshadow: "0 0 15px rgba(0,0,0,0.2)",
+                borderradius: "5px"
+            }
+        });
+       
+        var hed = $("<div></div>", {
+            text: "ZipCode " + properties.ZCTA5CE10 ,
+            css: {fontSize: "16px", marginBottom: "3px"}
+        }).appendTo(popup);
+       
+        popup.appendTo("#map");
+      });
+    
+      layer.on("mouseout", function (e) {
+     
+        
+      
+        $("#popup-" + properties.ZCTA5CE10).remove();
+      });
+      
+    })(layer, feature.properties);
+    
+    
+    
+    
+    
+    
+    
+            layer.on("click", function (e) { 
+                
+                //stateLayer.setStyle(style); 
+               
+                if(queue.hasLayer(layer)){
+                    
+                queue.removeLayer(layer);
+                queue.eachLayer(function(layerq) {
+                    
+	               layerq.setStyle({
+                        'color': 'red',
+			fillOpacity: 0.2,
+			fillColor: 'red'
+                    });
+                });
+            } else {
+                queue.addLayer(layer)
+                
+                //stateLayer.setStyle(style);
+                      queue.eachLayer(function(layerq) {
+	
+                      layerq.setStyle({
+                        'color': 'red',
+			fillOpacity: 0.2,
+			fillColor: 'red'
+                      });
+                    });
+                
+                
+            }
+                
+            
+            });
+
+
+}
+     let  ziplist = document.getElementById('ziplist');
+     var selectedgeo = queue.toGeoJSON();
+$(document).ready(function(){    
+    $('#getzip').click(function(){
+        
+        
+       
+
+        
+            
+        
+   
+    
+    var featuresLayer = new L.GeoJSON(selectedgeo,{
+			onEachFeature: function(feature, qlayer) {
+               
+				
+                
+                
+                
+                
+                
+                    let zipitem = document.createElement('li');
+  
+                zipitem.innerHTML = feature.properties.ZCTA5CE10;
+                ziplist.appendChild(zipitem);
+                
+					
+				
+			}
+		});
+   
+  });
+  });
+   
+    
+
+    
+    
+    
+//var selectedlayers = L.geoJson(null, {onEachFeature : forEachSelectedFeature });
+    
+    
+    
+    //alert(feature.properties.ZCTA5CE10);
+    
+var stateLayer = L.geoJson(null, {onEachFeature: forEachFeature, style: style});
+
+	
+$.getJSON("data/zipcodes.geojson", function(data) {
+        stateLayer.addData(data);
+   
+     $('#loading').fadeOut("medium");
+});
+  stateLayer.addTo(map); 
+     queue.addTo(map);
+     
+    /////////////////////////////////////////////////////////////////
+    
+       
+    
+   ////////////////////////////////////////////////////// 
+    new L.Control.Zoom({ position: 'bottomright' }).addTo(map);
+    var searchControl = new L.Control.Search({
+		layer: stateLayer,
+		propertyName: "ZCTA5CE10",
+		marker: false,
+        collapsed : false,
+        placeholder: "Enter Zipcode",
+		
+		}
+	).addTo(map);
+     
+     
+     
+     
+     
+    searchControl.on('search:locationfound', function(e) {
+		
+		//console.log('search:locationfound', );
+
+		//map.removeLayer(this._markerSearch)
+        map.fitBounds(e.layer.getBounds());
+		e.layer.setStyle(highlight);
+		if(e.layer._popup)
+			e.layer.openPopup();
+
+	});
+
+    
+var gray = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png').addTo(map);
+    var dark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png');
+    var satellite =
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
+
+    var baseLayers = {
+      'Light': gray,
+        'Dark': dark,
+      'Satellite': satellite
+    }
+    new L.control.layers(baseLayers, {
+        "Zipcodes": stateLayer,
+        "Selected Zipcodes": queue,
+        
+      }, {
+        collapsed: false
+      }).addTo(map);
+
+     
+     
+     
+
+    
+   
+    
+    
+    
+
+    
+ });   
+</script>
+</body>
+</html>
